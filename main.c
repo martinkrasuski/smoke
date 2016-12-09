@@ -11,7 +11,7 @@
 #define WINDOW_TITLE "Fluid"
 #define WINDOW_WIDTH 768
 #define WINDOW_HEIGHT 768
-#define SIZE 12 // Best not to raise this very high
+#define SIZE 28 // Best not to raise this very high
 
 extern void dens_step ( int M, int N, int O, float * x, float * x0, float * u, float * v, float * w, float diff, float dt );
 extern void vel_step (int M, int N, int O, float * u, float * v,  float * w, float * u0, float * v0, float * w0, float visc, float dt );

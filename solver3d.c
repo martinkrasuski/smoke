@@ -105,20 +105,31 @@ void project ( int M, int N, int O, float * u, float * v, float * w, float * p, 
 {
 	int i, j, k;
 
-	for ( i=1 ; i<=M ; i++ ) { for ( j=1 ; j<=N ; j++ ) { for ( k=1 ; k<=O ; k++ ) {
-		div[IX(i,j,k)] = -1.0/3.0*((u[IX(i+1,j,k)]-u[IX(i-1,j,k)])/M+(v[IX(i,j+1,k)]-v[IX(i,j-1,k)])/M+(w[IX(i,j,k+1)]-w[IX(i,j,k-1)])/M);
-		p[IX(i,j,k)] = 0;
-	}}}	
+	for (i = 1 ; i <= M; i++) {
+        for (j = 1 ; j <= N; j++) {
+            for ( k=1 ; k<=O ; k++ ) {
+		        div[IX(i,j,k)] = -1.0/3.0 * (
+                        (u[IX(i+1,j,k)] - u[IX(i-1,j,k)]) / M + 
+                        (v[IX(i,j+1,k)] - v[IX(i,j-1,k)]) / M + 
+                        (w[IX(i,j,k+1)] - w[IX(i,j,k-1)]) / M);
+		        p[IX(i,j,k)] = 0;
+	        }
+        }
+    }	
 	
 	set_bnd ( M, N, O, 0, div ); set_bnd (M, N, O, 0, p );
 
 	lin_solve ( M, N, O, 0, p, div, 1, 6 );
 
-	for ( i=1 ; i<=M ; i++ ) { for ( j=1 ; j<=N ; j++ ) { for ( k=1 ; k<=O ; k++ ) {
-		u[IX(i,j,k)] -= 0.5f*M*(p[IX(i+1,j,k)]-p[IX(i-1,j,k)]);
-		v[IX(i,j,k)] -= 0.5f*M*(p[IX(i,j+1,k)]-p[IX(i,j-1,k)]);
-		w[IX(i,j,k)] -= 0.5f*M*(p[IX(i,j,k+1)]-p[IX(i,j,k-1)]);
-	}}}
+	for (i = 1 ; i <= M; i++) {
+        for (j = 1 ; j <= N; j++) {
+            for (k = 1 ; k <= O; k++) {
+                u[IX(i,j,k)] -= 0.5f * M * (p[IX(i+1,j,k)]-p[IX(i-1,j,k)]);
+                v[IX(i,j,k)] -= 0.5f * M * (p[IX(i,j+1,k)]-p[IX(i,j-1,k)]);
+                w[IX(i,j,k)] -= 0.5f * M * (p[IX(i,j,k+1)]-p[IX(i,j,k-1)]);
+	        }
+        }
+    }
 	
 	set_bnd (  M, N, O, 1, u ); set_bnd (  M, N, O, 2, v );set_bnd (  M, N, O, 3, w);
 }
