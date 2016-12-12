@@ -316,7 +316,11 @@ void SmokeSystem::advect(bool advectVelocity) {
     for(int k = 1; k < n - 1; k++) {
         for(int j = 1; j < n - 1; j++) {
             for(int i = 1; i < n - 1; i++) {
-                tmp = dt * velocity[index(i, j, k)];
+                if(advectVelocity) {
+                    tmp = dt * oldVelocity[index(i, j, k)];
+                } else {
+                    tmp = dt * velocity[index(i, j, k)];
+                }
                 xyz = Vector3f(i, j, k) - tmp;
 
                 // x values
@@ -353,18 +357,7 @@ void SmokeSystem::advect(bool advectVelocity) {
                 int j1_index = j1;
                 int k0_index = k0;
                 int k1_index = k1;
-                /*if(k0_index >= n) {
-                    k0_index = n - 1;
-                }
-                if(k1_index >= n) {
-                    k1_index = n -1;
-                }
-                if(j0_index >= n) {
-                    j0_index = n - 1;
-                } 
-                if(j1_index >= n) {
-                    j1_index = n -1;
-                    }*/
+
                 k0_index = fmin(k0_index, n - 1);
                 k1_index = fmin(k1_index, n - 1);
                 j0_index = fmin(j0_index, n - 1);
@@ -465,10 +458,6 @@ void SmokeSystem::addVelocity(int x, int y, int z, float amountX, float amountY,
 int SmokeSystem::index(int i, int j, int k) {
     //return i + (n * j) + (n * n * k);
     int return_val = i + (n * j) + (n * n * k);
-    if(return_val > n * n * n){
-        printf("return val %d\n", return_val);
-        printf("i %d j %d k %d\n", i, j, k);
-    }
     assert(return_val <= n * n * n);
     assert(return_val >= 0);
     return return_val;
@@ -482,8 +471,7 @@ void SmokeSystem::draw()
     int N = n;
     h = 1.0f/N;
 
-    //float * dens = density;
-    float * dens = oldDensity;
+    float * dens = density;
     float source_alpha =  0.05; //for displaying density
 
     glBegin ( GL_QUADS );
