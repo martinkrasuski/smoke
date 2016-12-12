@@ -59,6 +59,10 @@ class SmokeSystem
 
     Vector3f getOldVelocity(int i, int j, int k);
 
+    float getDensity(int i, int j, int k);
+
+    float getOldDensity(int i, int j, int k);
+
  protected:
     Vector3f * velocity;
     Vector3f * oldVelocity;

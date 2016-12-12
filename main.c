@@ -4,6 +4,7 @@
 #include <OpenGL/gl.h> //OS x libs
 #include <OpenGL/glu.h>
 #include <GLUT/glut.h>
+#include "fluidCube.h"
 
 #define IX(i,j,k) ((i)+(M+2)*(j) + (M+2)*(N+2)*(k)) 
 #define MAX(a,b)            (((a) > (b)) ? (a) : (b))
@@ -43,6 +44,8 @@ static int win_x = WINDOW_WIDTH;
 static int  win_y = WINDOW_HEIGHT;
 static int mouse_down[3];
 static int omx, omy, mx, my;
+
+FluidCube * cube;
 
 enum { 
 	PAN = 1,
@@ -418,8 +421,9 @@ void display()
 	glRotatef(rot[1], 0.0f, 1.0f, 0.0f);
 
 	// toggle display modes
-	if ( dvel ) draw_velocity ();
-	else		draw_density ();
+	//if ( dvel ) draw_velocity ();
+	//else		draw_density ();
+        FluidCubeStep(cube);
 	if (dhelp) draw_help();
 	if (daxis) draw_axis();
 
@@ -537,12 +541,12 @@ static void open_glut_window ( void )
 
 int main ( int argc, char ** argv )
 {
-
+        cube = FluidCubeCreate(10, diff, visc, dt);
 	glutInit ( &argc, argv );	
 	open_glut_window();
 	init();
 	glutMainLoop();
 	shutdown();
-
+        FluidCubeFree(cube);
 	return 0;
 }

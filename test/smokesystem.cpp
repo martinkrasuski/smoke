@@ -270,8 +270,8 @@ void SmokeSystem::projectXYVel(bool old) {
             }
         }
     }
-    setBounds(Y_BOUND, false, old);
-    setBounds(X_BOUND, false, old);
+    setBounds(Y_BOUND, false, !old);
+    setBounds(X_BOUND, false, !old);
     
     // lin solve
     linSolveProject(X_BOUND, Y_BOUND, old);
@@ -302,6 +302,7 @@ void SmokeSystem::advect(bool advectVelocity) {
     float s0, s1, t0, t1, u0, u1;
     Vector3f tmp;
     Vector3f xyz;
+    float nFloat = n;
 
     for(int k = 1; k < n - 1; k++) {
         for(int j = 1; j < n - 1; j++) {
@@ -311,21 +312,21 @@ void SmokeSystem::advect(bool advectVelocity) {
 
                 // x values
                 xyz[0] = xyz[0] < 0.5f ? 0.5f : xyz[0];
-                xyz[0] = xyz[0] > n + 0.5f ? n + 0.5f : xyz[0];
+                xyz[0] = xyz[0] > nFloat + 0.5f ? nFloat + 0.5f : xyz[0];
 
                 i0 = floorf(xyz[0]);
                 i1 = i0 + 1.0f;
 
                 // y values
                 xyz[1] = xyz[1] < 0.5f ? 0.5f : xyz[1];
-                xyz[1] = xyz[1] > n + 0.5f ? n + 0.5f : xyz[1];
+                xyz[1] = xyz[1] > nFloat + 0.5f ? nFloat + 0.5f : xyz[1];
                 j0 = floorf(xyz[1]);
                 j1 = j0 + 1.0f;
 
                 // z values
                 xyz[2] = xyz[2] < 0.5f ? 0.5f : xyz[2];
-                xyz[2] = xyz[2] > n + 0.5f ? n + 0.5f : xyz[2];
-                k0 = floorf(xyz[1]);
+                xyz[2] = xyz[2] > nFloat + 0.5f ? nFloat + 0.5f : xyz[2];
+                k0 = floorf(xyz[2]);
                 k1 = k0 + 1.0f;
 
                 s1 = xyz[0] - i0;
@@ -385,6 +386,16 @@ Vector3f SmokeSystem::getVelocity(int i, int j, int k) {
 Vector3f SmokeSystem::getOldVelocity(int i, int j, int k) {
     int idx = index(i, j, k);
     return velocity[idx];
+}
+
+float SmokeSystem::getDensity(int i, int j, int k) {
+    int idx = index(i, j, k);
+    return density[idx];
+}
+
+float SmokeSystem::getOldDensity(int i, int j, int k) {
+    int idx = index(i, j, k);
+    return oldDensity[idx];
 }
                 
 void SmokeSystem::step() {

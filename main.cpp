@@ -13,7 +13,8 @@
 #define WINDOW_TITLE "Fluid"
 #define WINDOW_WIDTH 768
 #define WINDOW_HEIGHT 768
-#define SIZE 28 // Best not to raise this very high
+//#define SIZE 28 // Best not to raise this very high
+#define SIZE 10
 
 //extern void dens_step ( int M, int N, int O, float * x, float * x0, float * u, float * v, float * w, float diff, float dt );
 //extern void vel_step (int M, int N, int O, float * u, float * v,  float * w, float * u0, float * v0, float * w0, float visc, float dt );
@@ -46,8 +47,7 @@ static int  win_y = WINDOW_HEIGHT;
 static int mouse_down[3];
 static int omx, omy, mx, my;
 
-//FluidCube * cube;
-SmokeSystem smoke;
+SmokeSystem * smoke;
 
 enum { 
 	PAN = 1,
@@ -118,7 +118,7 @@ static void get_force_source ( float * d, float * u, float * v, float * w )
 
 		if ( i<1 || i>M || j<1 || j>N || k <1 || k>O) return;
 		u[IX(i,j,k)] = force*10;
-                //                FluidCubeAddVelocity(cube, i, j, k, force * 10, 0, 0);
+                smoke->addVelocity(i, j, k, force * 10, 0, 0);
 		addforce[0] = 0;
 	}	
 
@@ -130,7 +130,7 @@ static void get_force_source ( float * d, float * u, float * v, float * w )
 
 		if ( i<1 || i>M || j<1 || j>N || k <1 || k>O) return;
 		v[IX(i,j,k)] = force*10;
-                //                FluidCubeAddVelocity(cube, i, j, k, 0, force * 10, 0);
+                smoke->addVelocity(i, j, k, 0, force * 10, 0);
 		addforce[1] = 0;
 	}	
 
@@ -143,6 +143,7 @@ static void get_force_source ( float * d, float * u, float * v, float * w )
 		if ( i<1 || i>M || j<1 || j>N || k <1 || k>O) return;
 		w[IX(i,j,k)] = force*10; 	
                 //                FluidCubeAddVelocity(cube, i, j, k, 0, 0, force * 10);
+                smoke->addVelocity(i, j, k, 0, 0, force * 10);
 		addforce[2] = 0;
 	}	
 
@@ -153,38 +154,14 @@ static void get_force_source ( float * d, float * u, float * v, float * w )
 		k=O/2;
 		d[IX(i,j,k)] = source;
                 //                FluidCubeAddDensity(cube, i, j, k, source);
+                smoke->addDensity(i, j, k, source);
+                for(int i = 0; i < N; i++){
+                    smoke->addDensity(i, 1, 1, source);
+                }
 		addsource = 0;
 	}
 	
 	return;
-}
-
-static void draw_velocity ( void )
-{
-	int i, j, k;
-	float x, y, z, h;
-
-	h = 1.0f/MAX(MAX(M, N), MAX(N, O));
-
-	glColor3f ( 1.0f, 1.0f, 1.0f );
-	glLineWidth ( 1.0f );
-
-	glBegin ( GL_LINES );
-
-	for ( i=1; i<=M; i++ ) {
-		x = (i-0.5f)*h;
-		for ( j=1; j<=N; j++ ) {
-			y = (j-0.5f)*h;
-			for ( k=1; k<=O; k++ ) {
-				z = (k-0.5f)*h;
-
-				glVertex3f ( x, y, z );
-				glVertex3f ( x+u[IX(i,j,k)], y+v[IX(i,j,k)], z+w[IX(i,j,k)] );
-			}
-		}
-	}
-
-	glEnd ();
 }
 
 static void draw_axis()
@@ -208,70 +185,6 @@ static void draw_axis()
 	glEnd();
 }
 
-
-static void draw_density ( void )
-{
-    int i, j, k;
-	float x, y,z, h, d000, d010, d100, d110,d001, d011, d101, d111;
-	
-	h = 1.0f/MAX(MAX(M, N), MAX(N, O));
-
-	glBegin ( GL_QUADS );
-
-	for ( i=0; i<=M; i++ ) {
-		x = (i-0.5f)*h;
-		for ( j=0; j<=N; j++ ) {
-			y = (j-0.5f)*h;
-			for ( k=0; k<=O; k++ ) {
-				z = (k-0.5f)*h;
-
-				d000 = dens[IX(i,j,k)];
-				d010 = dens[IX(i,j+1,k)];
-				d100 = dens[IX(i+1,j,k)];
-				d110 = dens[IX(i+1,j+1,k)];
-
-				d001 = dens[IX(i,j,k+1)];
-				d011 = dens[IX(i,j+1,k+1)];
-				d101 = dens[IX(i+1,j,k+1)];
-				d111 = dens[IX(i+1,j+1,k+1)];				
-                
-				// draw density as a cube of quads
-
-				glColor4f ( d111, d111, d111, source_alpha ); glVertex3f ( x+h,y+h,z+h );
-				glColor4f ( d011, d011, d011, source_alpha ); glVertex3f ( x, y+h, z+h);
-				glColor4f ( d001, d001, d001, source_alpha ); glVertex3f ( x, y, z+h );
-				glColor4f ( d101, d101, d101, source_alpha ); glVertex3f ( x+h, y, z+h );
-
-				glColor4f ( d110, d110, d110, source_alpha ); glVertex3f ( x+h, y+h, z );
-				glColor4f ( d111, d111, d111, source_alpha ); glVertex3f ( x+h,y+h,z+h );
-				glColor4f ( d101, d101, d101, source_alpha ); glVertex3f ( x+h, y, z+h );
-				glColor4f ( d100, d100, d100, source_alpha ); glVertex3f ( x+h, y, z );
-
-				glColor4f ( d010, d010, d010, source_alpha ); glVertex3f ( x, y+h, z );
-				glColor4f ( d110, d110, d110, source_alpha ); glVertex3f ( x+h, y+h, z );
-				glColor4f ( d100, d100, d100, source_alpha ); glVertex3f ( x+h, y, z );
-				glColor4f ( d000, d000, d000, source_alpha ); glVertex3f ( x, y, z );
-                
-				glColor4f ( d011, d011, d011, source_alpha ); glVertex3f ( x, y+h, z+h);
-				glColor4f ( d010, d010, d010, source_alpha ); glVertex3f ( x, y+h, z );
-				glColor4f ( d000, d000, d000, source_alpha ); glVertex3f ( x, y, z );
-				glColor4f ( d001, d001, d001, source_alpha ); glVertex3f ( x, y, z+h );
-
-				glColor4f ( d100, d100, d100, source_alpha ); glVertex3f ( x+h, y, z );
-				glColor4f ( d000, d000, d000, source_alpha ); glVertex3f ( x, y, z );
-				glColor4f ( d001, d001, d001, source_alpha ); glVertex3f ( x, y, z+h );
-				glColor4f ( d101, d101, d101, source_alpha ); glVertex3f ( x+h, y, z+h );
-
-				glColor4f ( d110, d110, d110, source_alpha ); glVertex3f ( x+h, y+h, z );
-				glColor4f ( d010, d010, d010, source_alpha ); glVertex3f ( x, y+h, z );
-				glColor4f ( d011, d011, d011, source_alpha ); glVertex3f ( x, y+h, z+h);
-				glColor4f ( d111, d111, d111, source_alpha ); glVertex3f ( x+h, y+h, z+h );				
-			}
-		}
-	}
-
-	glEnd ();
-}
 
 float clamp(float x) {
 	return x > 360.0f ? x-360.0f : x < -360.0f ? x+=360.0f : x;
@@ -388,10 +301,12 @@ void draw_help()
 void sim_main(void)
 {
 
-    get_force_source( dens_prev, u_prev, v_prev, w_prev );
+    //get_force_source( dens_prev, u_prev, v_prev, w_prev );
     //vel_step ( M,N,O, u, v, w, u_prev, v_prev,w_prev, visc, dt );
     //dens_step ( M,N,O, dens, dens_prev, u, v, w, diff, dt );	
     //    FluidCubeStep(cube);
+    smoke->step();
+    get_force_source( dens_prev, u_prev, v_prev, w_prev );
 
 }
 
@@ -432,7 +347,7 @@ void display()
 	//else		draw_density ();
         //FluidCubeStep(cube);
         //draw_density(cube);
-        smoke.draw();
+        smoke->draw();
 	if (dhelp) draw_help();
 	if (daxis) draw_axis();
 
@@ -550,14 +465,15 @@ static void open_glut_window ( void )
 
 int main ( int argc, char ** argv )
 {
-        smoke = SmokeSystem();
+        smoke = new SmokeSystem();
         //cube = FluidCubeCreate(SIZE, diff, visc, dt);
 	glutInit ( &argc, argv );	
 	open_glut_window();
 	init();
 	glutMainLoop();
-	shutdown();
+	//shutdown();
         //FluidCubeFree(cube);
-        //delete smoke;
+        delete smoke;
+        smoke = nullptr;
 	return 0;
 }
