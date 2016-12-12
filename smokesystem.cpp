@@ -11,7 +11,8 @@
 #define Z_BOUND 2
 
 SmokeSystem::SmokeSystem() {
-    n = 10;
+    //n = 10;
+    n = 28;
     stepSize = .4;
     velocity = new Vector3f[n * n * n];
     oldVelocity = new Vector3f[n * n * n];
@@ -70,7 +71,7 @@ void SmokeSystem::setBounds(int boundType, bool reverse, bool old) {
             velocity[index(n - 1, i, j)][boundType] = direction * velocity[index(n - 2, i, j)][boundType];
         }
     }
-    
+    //printf("smoke 1 %f smoke 2 %f smoke 3 %f\n", velocity[index(1, 0, n - 1)][boundType], velocity[index(0, 1, n -1)][boundType], velocity[index(0, 0, n)][boundType]);
     // set corners to average of three neighbors
     velocity[index(0, 0, 0)][boundType] = 0.33f * (velocity[index(1, 0, 0)][boundType] 
                                                    + velocity[index(0, 1, 0)][boundType] 
@@ -81,8 +82,8 @@ void SmokeSystem::setBounds(int boundType, bool reverse, bool old) {
                                                        + velocity[index(0, n -1, 1)][boundType]);
 
     velocity[index(0, 0, n - 1)][boundType] = 0.33f * (velocity[index(1, 0, n - 1)][boundType] 
-                                                       + velocity[index(0, 1, n -1)][boundType]
-                                                       + velocity[index(0, 0, n - 1)][boundType]);
+                                                       + velocity[index(0, 1, n - 1)][boundType]
+                                                       + velocity[index(0, 0, n)][boundType]);
 
     velocity[index(0, n - 1, n -1)][boundType] = 0.33f * (velocity[index(1, n - 1, n - 1)][boundType]
                                                           + velocity[index(0, n - 2, n - 1)][boundType]
@@ -106,8 +107,14 @@ void SmokeSystem::setBounds(int boundType, bool reverse, bool old) {
 }
 
 // don't let dye leak out of box
-void SmokeSystem::setBoundsDensity() {
+void SmokeSystem::setBoundsDensity(bool old) {
     //int n = this->n - 1;
+    float * density;
+    if(old)
+        density = this->oldDensity;
+    else
+        density = this->density;
+    //float * density = this->oldDensity;
     for(int j = 1; j < n - 1; j++) {
         for(int i = 1; i < n - 1; i++) {
             density[index(i, j, 0)] = density[index(i, j, 1)];
@@ -130,9 +137,11 @@ void SmokeSystem::setBoundsDensity() {
                                                        + density[index(0, n - 2, 0)]
                                                        + density[index(0, n -1, 1)]);
 
+    //printf("smoke 1 %f smoke 2 %f smoke 3 %f\n", density[index(1, 0, n - 1)], density[index(0, 1, n -1)], density[index(0, 0, n)]);
+
     density[index(0, 0, n - 1)] = 0.33f * (density[index(1, 0, n - 1)]
                                                        + density[index(0, 1, n -1)]
-                                                       + density[index(0, 0, n - 1)]);
+                                                       + density[index(0, 0, n)]);
 
     density[index(0, n - 1, n -1)] = 0.33f * (density[index(1, n - 1, n - 1)]
                                                           + density[index(0, n - 2, n - 1)]
@@ -164,21 +173,21 @@ void SmokeSystem::diffuseVelocity() {
         for(int m = 1; m < n - 1; m++) {
             for(int j = 1; j < n - 1; j++) {
                 for(int i = 1; i < n - 1; i++) {
-                    velocity[index(i, j, m)] =
-                        (oldVelocity[index(i, j, m)] 
-                         + a * (velocity[index(i + 1, j, m)]
-                                + velocity[index(i - 1, j, m)]
-                                + velocity[index(i, j + 1, m)]
-                                + velocity[index(i, j - 1, m)]
-                                + velocity[index(i, j, m + 1)]
-                                + velocity[index(i, j, m - 1)]
+                    oldVelocity[index(i, j, m)] =
+                        (velocity[index(i, j, m)] 
+                         + a * (oldVelocity[index(i + 1, j, m)]
+                                + oldVelocity[index(i - 1, j, m)]
+                                + oldVelocity[index(i, j + 1, m)]
+                                + oldVelocity[index(i, j - 1, m)]
+                                + oldVelocity[index(i, j, m + 1)]
+                                + oldVelocity[index(i, j, m - 1)]
                                 )) * invC;
                 }
             }
         }
-        setBounds(X_BOUND, true, false);
-        setBounds(Y_BOUND, true, false);
-        setBounds(Z_BOUND, true, false);
+        setBounds(X_BOUND, true, true);
+        setBounds(Y_BOUND, true, true);
+        setBounds(Z_BOUND, true, true);
     }
 }
 
@@ -191,20 +200,20 @@ void SmokeSystem::diffuseDensity() {
         for(int m = 1; m < n - 1; m++) {
             for(int j = 1; j < n - 1; j++) {
                 for(int i = 1; i < n - 1; i++) {
-                    density[index(i, j, m)] =
-                        (oldDensity[index(i, j, m)] 
-                         + a * (density[index(i + 1, j, m)]
-                                + density[index(i - 1, j, m)]
-                                + density[index(i, j + 1, m)]
-                                + density[index(i, j - 1, m)]
-                                + density[index(i, j, m + 1)]
-                                + density[index(i, j, m - 1)]
+                    oldDensity[index(i, j, m)] =
+                        (density[index(i, j, m)] 
+                         + a * (oldDensity[index(i + 1, j, m)]
+                                + oldDensity[index(i - 1, j, m)]
+                                + oldDensity[index(i, j + 1, m)]
+                                + oldDensity[index(i, j - 1, m)]
+                                + oldDensity[index(i, j, m + 1)]
+                                + oldDensity[index(i, j, m - 1)]
                                 )) * invC;
                 }
             }
         }
         // change to density
-        setBoundsDensity();
+        setBoundsDensity(true);
     }
 }
 
@@ -259,7 +268,7 @@ void SmokeSystem::projectXYVel(bool old) {
     for(int k = 1; k < n - 1; k++) {
         for(int j = 1; j < n - 1; j++) {
             for(int i = 1; i < n - 1; i++) {
-                div[index(i, j, k)][1] = -.05f *(
+                div[index(i, j, k)][1] = -0.5f *(
                                                       velocity[index(i + 1, j, k)][0]
                                                       - velocity[index(i - 1, j, k)][0]
                                                       + velocity[index(i, j + 1, k)][1]
@@ -270,11 +279,11 @@ void SmokeSystem::projectXYVel(bool old) {
             }
         }
     }
-    setBounds(Y_BOUND, false, old);
-    setBounds(X_BOUND, false, old);
+    setBounds(Y_BOUND, false, !old);
+    setBounds(X_BOUND, false, !old);
     
     // lin solve
-    linSolveProject(X_BOUND, Y_BOUND, old);
+    linSolveProject(X_BOUND, Y_BOUND, !old);
 
     for(int k = 1; k < n - 1; k++) {
         for(int j = 1; j < n - 1; j++) {
@@ -287,7 +296,7 @@ void SmokeSystem::projectXYVel(bool old) {
                                                        - div[index(i, j, k - 1)][0]) * n;
             }
         }
-    }
+        }
     setBounds(X_BOUND, true, old);
     setBounds(Y_BOUND, true, old);
     setBounds(Z_BOUND, true, old);
@@ -302,6 +311,7 @@ void SmokeSystem::advect(bool advectVelocity) {
     float s0, s1, t0, t1, u0, u1;
     Vector3f tmp;
     Vector3f xyz;
+    float nFloat = n;
 
     for(int k = 1; k < n - 1; k++) {
         for(int j = 1; j < n - 1; j++) {
@@ -311,21 +321,21 @@ void SmokeSystem::advect(bool advectVelocity) {
 
                 // x values
                 xyz[0] = xyz[0] < 0.5f ? 0.5f : xyz[0];
-                xyz[0] = xyz[0] > n + 0.5f ? n + 0.5f : xyz[0];
+                xyz[0] = xyz[0] > nFloat + 0.5f ? nFloat + 0.5f : xyz[0];
 
                 i0 = floorf(xyz[0]);
                 i1 = i0 + 1.0f;
 
                 // y values
                 xyz[1] = xyz[1] < 0.5f ? 0.5f : xyz[1];
-                xyz[1] = xyz[1] > n + 0.5f ? n + 0.5f : xyz[1];
+                xyz[1] = xyz[1] > nFloat + 0.5f ? nFloat + 0.5f : xyz[1];
                 j0 = floorf(xyz[1]);
                 j1 = j0 + 1.0f;
 
                 // z values
                 xyz[2] = xyz[2] < 0.5f ? 0.5f : xyz[2];
-                xyz[2] = xyz[2] > n + 0.5f ? n + 0.5f : xyz[2];
-                k0 = floorf(xyz[1]);
+                xyz[2] = xyz[2] > nFloat + 0.5f ? nFloat + 0.5f : xyz[2];
+                k0 = floorf(xyz[2]);
                 k1 = k0 + 1.0f;
 
                 s1 = xyz[0] - i0;
@@ -343,6 +353,24 @@ void SmokeSystem::advect(bool advectVelocity) {
                 int j1_index = j1;
                 int k0_index = k0;
                 int k1_index = k1;
+                /*if(k0_index >= n) {
+                    k0_index = n - 1;
+                }
+                if(k1_index >= n) {
+                    k1_index = n -1;
+                }
+                if(j0_index >= n) {
+                    j0_index = n - 1;
+                } 
+                if(j1_index >= n) {
+                    j1_index = n -1;
+                    }*/
+                k0_index = fmin(k0_index, n - 1);
+                k1_index = fmin(k1_index, n - 1);
+                j0_index = fmin(j0_index, n - 1);
+                j1_index = fmin(j1_index, n - 1);
+                i0_index = fmin(i0_index, n - 1);
+                i1_index = fmin(i1_index, n - 1);
 
                 if(advectVelocity) {
                     velocity[index(i, j, k)] = 
@@ -355,15 +383,26 @@ void SmokeSystem::advect(bool advectVelocity) {
                             + (t1 * (u0 * oldVelocity[index(i1_index, j1_index, k0_index)]
                                      + u1 * oldVelocity[index(i1_index, j1_index, k1_index)])));
                 } else {
-                    oldDensity[index(i, j, k)] = 
-                    s0 * (t0 * (u0 * density[index(i0_index, j0_index, k0_index)]
-                                + u1 * density[index(i0_index, j0_index, k1_index)])
-                          + ( t1 * (u0 * density[index(i0_index, j1_index, k0_index)]
-                                    + u1 * density[index(i0_index, j1_index, k1_index)])))
-                    + s1 * (t0 * (u0 * density[index(i1_index, j0_index, k0_index)]
-                                  + u1 * density[index(i1_index, j0_index, k1_index)])
-                            + (t1 * (u0 * density[index(i1_index, j1_index, k0_index)]
-                                     + u1 * density[index(i1_index, j1_index, k1_index)])));
+                    /*if(i == 1 && j == 1 && k == 1) {
+                        printf("smoke i0 %d i1 %d j0 %d j1 %d k0 %d k1 %d\n", i0_index, i1_index, j0_index, j1_index, k0_index, k1_index);
+                        printf("old Dens smoke 1 %f\n", oldDensity[index(i0_index, j0_index, k0_index)]);
+                        printf("old Dens smoke 2 %f\n", oldDensity[index(i0_index, j0_index, k1_index)]);
+                        printf("old Dens smoke 3 %f\n", oldDensity[index(i0_index, j1_index, k0_index)]);
+                        printf("old dens smoke 4 %f\n", oldDensity[index(i0_index, j1_index, k1_index)]);
+                        printf("old dens smoke 5 %f\n", oldDensity[index(i1_index, j0_index, k0_index)]);
+                        printf("old dens smoke 6 %f\n", oldDensity[index(i1_index, j0_index, k1_index)]);
+                        printf("old dens smoke 7 %f\n", oldDensity[index(i1_index, j1_index, k0_index)]);
+                        printf("old dens smoke 8 %f\n", oldDensity[index(i1_index, j1_index, k1_index)]);
+                        }*/
+                    density[index(i, j, k)] = 
+                    s0 * (t0 * (u0 * oldDensity[index(i0_index, j0_index, k0_index)]
+                                + u1 * oldDensity[index(i0_index, j0_index, k1_index)])
+                          + ( t1 * (u0 * oldDensity[index(i0_index, j1_index, k0_index)]
+                                    + u1 * oldDensity[index(i0_index, j1_index, k1_index)])))
+                    + s1 * (t0 * (u0 * oldDensity[index(i1_index, j0_index, k0_index)]
+                                  + u1 * oldDensity[index(i1_index, j0_index, k1_index)])
+                            + (t1 * (u0 * oldDensity[index(i1_index, j1_index, k0_index)]
+                                     + u1 * oldDensity[index(i1_index, j1_index, k1_index)])));
                 }
             }
         }
@@ -373,7 +412,7 @@ void SmokeSystem::advect(bool advectVelocity) {
         setBounds(Y_BOUND, true, false);
         setBounds(Z_BOUND, true, false);
     } else {
-        setBoundsDensity();
+        setBoundsDensity(false);
     }
 }
 
@@ -384,7 +423,17 @@ Vector3f SmokeSystem::getVelocity(int i, int j, int k) {
 
 Vector3f SmokeSystem::getOldVelocity(int i, int j, int k) {
     int idx = index(i, j, k);
-    return velocity[idx];
+    return oldVelocity[idx];
+}
+
+float SmokeSystem::getDensity(int i, int j, int k) {
+    int idx = index(i, j, k);
+    return density[idx];
+}
+
+float SmokeSystem::getOldDensity(int i, int j, int k) {
+    int idx = index(i, j, k);
+    return oldDensity[idx];
 }
                 
 void SmokeSystem::step() {
@@ -416,7 +465,11 @@ void SmokeSystem::addVelocity(int x, int y, int z, float amountX, float amountY,
 int SmokeSystem::index(int i, int j, int k) {
     //return i + (n * j) + (n * n * k);
     int return_val = i + (n * j) + (n * n * k);
-    assert(return_val < n * n * n);
+    if(return_val > n * n * n){
+        printf("return val %d\n", return_val);
+        printf("i %d j %d k %d\n", i, j, k);
+    }
+    assert(return_val <= n * n * n);
     assert(return_val >= 0);
     return return_val;
 }
@@ -429,7 +482,8 @@ void SmokeSystem::draw()
     int N = n;
     h = 1.0f/N;
 
-    float * dens = density;
+    //float * dens = density;
+    float * dens = oldDensity;
     float source_alpha =  0.05; //for displaying density
 
     glBegin ( GL_QUADS );

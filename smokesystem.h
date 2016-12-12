@@ -35,7 +35,7 @@ class SmokeSystem
 
     void setBounds(int boundType, bool reverse, bool old);
 
-    void setBoundsDensity();
+    void setBoundsDensity(bool old);
 
     void diffuseVelocity();
 
@@ -58,6 +58,10 @@ class SmokeSystem
     Vector3f getVelocity(int i, int j, int k);
 
     Vector3f getOldVelocity(int i, int j, int k);
+
+    float getDensity(int i, int j, int k);
+
+    float getOldDensity(int i, int j, int k);
 
  protected:
     Vector3f * velocity;
