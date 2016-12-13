@@ -10,9 +10,8 @@
 #define Y_BOUND 1
 #define Z_BOUND 2
 
-SmokeSystem::SmokeSystem() {
-    //n = 10;
-    n = 28;
+SmokeSystem::SmokeSystem(int size) {
+    n = size;
     stepSize = .4;
     velocity = new Vector3f[n * n * n];
     oldVelocity = new Vector3f[n * n * n];
@@ -71,7 +70,7 @@ void SmokeSystem::setBounds(int boundType, bool reverse, bool old) {
             velocity[index(n - 1, i, j)][boundType] = direction * velocity[index(n - 2, i, j)][boundType];
         }
     }
-    //printf("smoke 1 %f smoke 2 %f smoke 3 %f\n", velocity[index(1, 0, n - 1)][boundType], velocity[index(0, 1, n -1)][boundType], velocity[index(0, 0, n)][boundType]);
+
     // set corners to average of three neighbors
     velocity[index(0, 0, 0)][boundType] = 0.33f * (velocity[index(1, 0, 0)][boundType] 
                                                    + velocity[index(0, 1, 0)][boundType] 
@@ -108,13 +107,12 @@ void SmokeSystem::setBounds(int boundType, bool reverse, bool old) {
 
 // don't let dye leak out of box
 void SmokeSystem::setBoundsDensity(bool old) {
-    //int n = this->n - 1;
     float * density;
     if(old)
         density = this->oldDensity;
     else
         density = this->density;
-    //float * density = this->oldDensity;
+
     for(int j = 1; j < n - 1; j++) {
         for(int i = 1; i < n - 1; i++) {
             density[index(i, j, 0)] = density[index(i, j, 1)];
@@ -137,7 +135,6 @@ void SmokeSystem::setBoundsDensity(bool old) {
                                                        + density[index(0, n - 2, 0)]
                                                        + density[index(0, n -1, 1)]);
 
-    //printf("smoke 1 %f smoke 2 %f smoke 3 %f\n", density[index(1, 0, n - 1)], density[index(0, 1, n -1)], density[index(0, 0, n)]);
 
     density[index(0, 0, n - 1)] = 0.33f * (density[index(1, 0, n - 1)]
                                                        + density[index(0, 1, n -1)]
@@ -376,17 +373,6 @@ void SmokeSystem::advect(bool advectVelocity) {
                             + (t1 * (u0 * oldVelocity[index(i1_index, j1_index, k0_index)]
                                      + u1 * oldVelocity[index(i1_index, j1_index, k1_index)])));
                 } else {
-                    /*if(i == 1 && j == 1 && k == 1) {
-                        printf("smoke i0 %d i1 %d j0 %d j1 %d k0 %d k1 %d\n", i0_index, i1_index, j0_index, j1_index, k0_index, k1_index);
-                        printf("old Dens smoke 1 %f\n", oldDensity[index(i0_index, j0_index, k0_index)]);
-                        printf("old Dens smoke 2 %f\n", oldDensity[index(i0_index, j0_index, k1_index)]);
-                        printf("old Dens smoke 3 %f\n", oldDensity[index(i0_index, j1_index, k0_index)]);
-                        printf("old dens smoke 4 %f\n", oldDensity[index(i0_index, j1_index, k1_index)]);
-                        printf("old dens smoke 5 %f\n", oldDensity[index(i1_index, j0_index, k0_index)]);
-                        printf("old dens smoke 6 %f\n", oldDensity[index(i1_index, j0_index, k1_index)]);
-                        printf("old dens smoke 7 %f\n", oldDensity[index(i1_index, j1_index, k0_index)]);
-                        printf("old dens smoke 8 %f\n", oldDensity[index(i1_index, j1_index, k1_index)]);
-                        }*/
                     density[index(i, j, k)] = 
                     s0 * (t0 * (u0 * oldDensity[index(i0_index, j0_index, k0_index)]
                                 + u1 * oldDensity[index(i0_index, j0_index, k1_index)])
@@ -400,6 +386,7 @@ void SmokeSystem::advect(bool advectVelocity) {
             }
         }
     }
+
     if(advectVelocity) {
         setBounds(X_BOUND, true, false);
         setBounds(Y_BOUND, true, false);
@@ -455,8 +442,23 @@ void SmokeSystem::addVelocity(int x, int y, int z, float amountX, float amountY,
     velocity[idx][2] += amountZ;
 }
 
+void SmokeSystem::setDensity(int x, int y, int z, float amount) {
+    density[index(x, y, z)] = amount;
+    oldDensity[index(x, y, z)] = amount;
+}
+
+void SmokeSystem::setVelocity(int x, int y, int z, float amountX, float amountY, float amountZ) {
+    int idx = index(x, y, z);
+    velocity[idx][0] = amountX;
+    velocity[idx][1] = amountY;
+    velocity[idx][2] = amountZ;
+    oldVelocity[idx][0] = amountX;
+    oldVelocity[idx][1] = amountY;
+    oldVelocity[idx][2] = amountZ;
+
+}
+
 int SmokeSystem::index(int i, int j, int k) {
-    //return i + (n * j) + (n * n * k);
     int return_val = i + (n * j) + (n * n * k);
     assert(return_val <= n * n * n);
     assert(return_val >= 0);

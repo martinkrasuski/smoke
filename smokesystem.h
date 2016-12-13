@@ -12,7 +12,7 @@
 class SmokeSystem
 {
  public:
-    SmokeSystem();
+    SmokeSystem(int size);
     ~SmokeSystem();
     
     void swapVelocity();
@@ -62,6 +62,10 @@ class SmokeSystem
     float getDensity(int i, int j, int k);
 
     float getOldDensity(int i, int j, int k);
+
+    void setVelocity(int x, int y, int z, float amountX, float amountY, float amountZ);
+
+    void setDensity(int x, int y, int z, float amount);
 
  protected:
     Vector3f * velocity;

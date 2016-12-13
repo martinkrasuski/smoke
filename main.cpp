@@ -13,11 +13,9 @@
 #define WINDOW_TITLE "Fluid"
 #define WINDOW_WIDTH 768
 #define WINDOW_HEIGHT 768
-#define SIZE 28 // Best not to raise this very high
+//#define SIZE 80 // Best not to raise this very high
+#define SIZE 50
 //#define SIZE 10
-
-//extern void dens_step ( int M, int N, int O, float * x, float * x0, float * u, float * v, float * w, float diff, float dt );
-//extern void vel_step (int M, int N, int O, float * u, float * v,  float * w, float * u0, float * v0, float * w0, float visc, float dt );
 
 
 //fluid field information
@@ -58,25 +56,22 @@ enum {
 GLfloat trans[3];
 GLfloat rot[2];				
 
-static void free_data ( void )
-{
-	if ( u ) free ( u );
-	if ( v ) free ( v );
-	if ( w ) free ( w );
-	if ( u_prev ) free ( u_prev );
-	if ( v_prev ) free ( v_prev );
-	if ( w_prev ) free ( w_prev );
-	if ( dens ) free ( dens );
-	if ( dens_prev ) free ( dens_prev );
-}
-
 static void clear_data ( void )
 {
 	int i, size=(M+2)*(N+2)*(O+2);
+        size = M;
 
-	for ( i=0 ; i<size ; i++ ) {
-		u[i] = v[i] = w[i] = u_prev[i] = v_prev[i] =w_prev[i] = dens[i] = dens_prev[i] = 0.0f;
-	}
+	//for ( i=0 ; i<size ; i++ ) {
+	//	u[i] = v[i] = w[i] = u_prev[i] = v_prev[i] =w_prev[i] = dens[i] = dens_prev[i] = 0.0f;
+	//}
+        for(int i = 0; i < size; i++) {
+            for(int j = 0; j < size; j++) {
+                for(int k = 0; k < size; k++) {
+                    smoke->setDensity(i, j, k, 0);
+                    smoke->setVelocity(i, j, k, 0, 0, 0);
+                }
+            }
+        }
 
 	addforce[0] = addforce[1] = addforce[2] = 0;
 }
@@ -106,9 +101,6 @@ static void get_force_source ( float * d, float * u, float * v, float * w )
 {
 	int i, j, k, size=(M+2)*(N+2)*(O+2);;
 
-	for ( i=0 ; i<size ; i++ ) {
-		u[i] = v[i] = w[i]= d[i] = 0.0f;
-	}
 
 	if(addforce[0]==1) // x
 	{
@@ -117,7 +109,6 @@ static void get_force_source ( float * d, float * u, float * v, float * w )
 		k=O/2;
 
 		if ( i<1 || i>M || j<1 || j>N || k <1 || k>O) return;
-		u[IX(i,j,k)] = force*10;
                 smoke->addVelocity(i, j, k, force * 10, 0, 0);
 		addforce[0] = 0;
 	}	
@@ -129,7 +120,6 @@ static void get_force_source ( float * d, float * u, float * v, float * w )
 		k=O/2;
 
 		if ( i<1 || i>M || j<1 || j>N || k <1 || k>O) return;
-		v[IX(i,j,k)] = force*10;
                 smoke->addVelocity(i, j, k, 0, force * 10, 0);
 		addforce[1] = 0;
 	}	
@@ -141,8 +131,6 @@ static void get_force_source ( float * d, float * u, float * v, float * w )
 		k=2;
 
 		if ( i<1 || i>M || j<1 || j>N || k <1 || k>O) return;
-		w[IX(i,j,k)] = force*10; 	
-                //                FluidCubeAddVelocity(cube, i, j, k, 0, 0, force * 10);
                 smoke->addVelocity(i, j, k, 0, 0, force * 10);
 		addforce[2] = 0;
 	}	
@@ -152,12 +140,7 @@ static void get_force_source ( float * d, float * u, float * v, float * w )
 		i=M/2,
 		j=N/2;
 		k=O/2;
-		d[IX(i,j,k)] = source;
-                //                FluidCubeAddDensity(cube, i, j, k, source);
                 smoke->addDensity(i, j, k, source);
-                //for(int i = 0; i < N; i++){
-                //    smoke->addDensity(i, 1, 1, source);
-                //}
 		addsource = 0;
 	}
 	
@@ -223,8 +206,8 @@ int init(void)
 	rot[0] = 30;
 	rot[1] = -45;
 
-	if ( !allocate_data () ) 
-		return (0);
+	/*if ( !allocate_data () ) 
+          return (0);*/
 	clear_data ();
 
 	glEnable(GL_BLEND);
@@ -310,14 +293,6 @@ void sim_main(void)
 
 }
 
-int shutdown(void)
-{
-	
-	free_data ();
-	
-	return 0;
-} 
-
 void sim_reset()
 {
 	clear_data();
@@ -342,11 +317,6 @@ void display()
 	glRotatef(rot[0], 1.0f, 0.0f, 0.0f);
 	glRotatef(rot[1], 0.0f, 1.0f, 0.0f);
 
-	// toggle display modes
-	//if ( dvel ) draw_velocity ();
-	//else		draw_density ();
-        //FluidCubeStep(cube);
-        //draw_density(cube);
         smoke->draw();
 	if (dhelp) draw_help();
 	if (daxis) draw_axis();
@@ -372,7 +342,7 @@ static void key_func ( unsigned char key, int x, int y )
 	
 		switch (key) {
 			case 27:		// ESC key
-			    free_data ();
+			    delete smoke;
 			    exit ( 0 );
 				break;
 			case 'w':       // 'W' key - apply force x-axis
@@ -465,14 +435,11 @@ static void open_glut_window ( void )
 
 int main ( int argc, char ** argv )
 {
-        smoke = new SmokeSystem();
-        //cube = FluidCubeCreate(SIZE, diff, visc, dt);
+        smoke = new SmokeSystem(SIZE);
 	glutInit ( &argc, argv );	
 	open_glut_window();
 	init();
 	glutMainLoop();
-	//shutdown();
-        //FluidCubeFree(cube);
         delete smoke;
         smoke = nullptr;
 	return 0;
