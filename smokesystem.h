@@ -78,6 +78,8 @@ class SmokeSystem
     float diff = 0.0f;
     int linSolveIter = 4;
     int n;
+    int cubeStart;
+    int cubeEnd;
     
 };
 

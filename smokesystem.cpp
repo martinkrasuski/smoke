@@ -13,6 +13,8 @@
 SmokeSystem::SmokeSystem(int size) {
     n = size;
     stepSize = .4;
+    cubeStart = 3 * n / 8;
+    cubeEnd = 5 * n / 8;
     velocity = new Vector3f[n * n * n];
     oldVelocity = new Vector3f[n * n * n];
     density = new float[n * n * n];
@@ -71,6 +73,30 @@ void SmokeSystem::setBounds(int boundType, bool reverse, bool old) {
         }
     }
 
+    for(int j = cubeStart; j < cubeEnd - 1; j++) {
+        for(int i = cubeEnd; i < cubeEnd - 1; i++) {
+            int direction = 1;
+            if(boundType == Z_BOUND && reverse)
+                direction = -1;
+            velocity[index(i, j, cubeStart)][boundType] = direction * velocity[index(i, j, cubeStart + 1)][boundType];
+            velocity[index(i, j, 3*n/4 - 1)][boundType] = direction * velocity[index(i, j, cubeEnd - 2)][boundType];
+
+            if(boundType == Y_BOUND && reverse)
+                direction = -1;
+            else
+                direction = 1;
+            velocity[index(i, cubeStart, j)][boundType] = direction * velocity[index(i, cubeStart + 1, j)][boundType];
+            velocity[index(i, cubeEnd - 1, j)][boundType] = direction * velocity[index(i, cubeEnd - 2, j)][boundType];
+
+            if(boundType == X_BOUND && reverse)
+                direction = -1;
+            else
+                direction = 1;
+            velocity[index(cubeStart, i, j)][boundType] = direction * velocity[index(cubeStart + 1, i, j)][boundType];
+            velocity[index(cubeEnd - 1, i, j)][boundType] = direction * velocity[index(cubeEnd - 2, i, j)][boundType];
+        }
+    }
+
     // set corners to average of three neighbors
     velocity[index(0, 0, 0)][boundType] = 0.33f * (velocity[index(1, 0, 0)][boundType] 
                                                    + velocity[index(0, 1, 0)][boundType] 
@@ -123,6 +149,20 @@ void SmokeSystem::setBoundsDensity(bool old) {
 
             density[index(0, i, j)] = density[index(1, i, j)];
             density[index(n - 1, i, j)] = density[index(n - 2, i, j)];
+        }
+    }
+
+    for(int j = cubeStart; j < cubeEnd - 1; j++) {
+        for(int i = cubeStart; i < cubeEnd - 1; i++) {
+            int direction = 1;
+            density[index(i, j, cubeStart)] = direction * density[index(i, j, cubeStart + 1)];
+            density[index(i, j, cubeEnd - 1)] = direction * density[index(i, j, cubeEnd - 2)];
+
+            density[index(i, cubeStart, j)] = direction * density[index(i, cubeStart + 1, j)];
+            density[index(i, cubeEnd - 1, j)] = direction * density[index(i, cubeEnd - 2, j)];
+
+            density[index(cubeStart, i, j)] = direction * density[index(cubeStart + 1, i, j)];
+            density[index(cubeEnd - 1, i, j)] = direction * density[index(cubeEnd - 2, i, j)];
         }
     }
     
@@ -281,7 +321,6 @@ void SmokeSystem::projectXYVel(bool old) {
     
     // lin solve
     linSolveProject(X_BOUND, Y_BOUND, !old);
-
     for(int k = 1; k < n - 1; k++) {
         for(int j = 1; j < n - 1; j++) {
             for(int i = 1; i < n - 1; i++) {
@@ -418,16 +457,21 @@ float SmokeSystem::getOldDensity(int i, int j, int k) {
                 
 void SmokeSystem::step() {
     diffuseVelocity();
-    
+    // keep incompressible
     projectXYVel(true);
 
     // advect velocity
+    // move velocities around
     advect(true);
-
+    
+    // keep incompressible
     projectXYVel(false);
 
+    // diffuse dye
     diffuseDensity();
+    
     // advect density
+    // move dye around
     advect(false);
 }
 
@@ -474,9 +518,41 @@ void SmokeSystem::draw()
     h = 1.0f/N;
 
     float * dens = density;
-    float source_alpha =  0.05; //for displaying density
+    float source_alpha =  0.02; //for displaying density
 
     glBegin ( GL_QUADS );
+    // draw cube
+    float n = 1.0f;
+    glColor4f ( 0, 1, 0, .8 ); 
+    glVertex3f ( cubeStart * h, cubeStart * h, cubeStart * h );
+    glVertex3f ( cubeEnd * h, cubeStart * h, cubeStart * h);
+    glVertex3f ( cubeEnd * h, cubeStart * h, cubeEnd * h );
+    glVertex3f ( cubeStart * h, cubeStart * h, cubeEnd * h );
+
+    glVertex3f ( cubeStart * h, cubeStart * h, cubeStart * h );
+    glVertex3f ( cubeStart * h, cubeEnd * h, cubeStart * h);
+    glVertex3f ( cubeStart * h, cubeEnd * h, cubeEnd * h );
+    glVertex3f ( cubeStart * h, cubeStart * h, cubeEnd * h );
+
+    glVertex3f ( cubeEnd * h, cubeStart * h, cubeStart * h );
+    glVertex3f ( cubeEnd * h, cubeEnd * h, cubeStart * h);
+    glVertex3f ( cubeEnd * h, cubeEnd * h, cubeEnd * h );
+    glVertex3f ( cubeEnd * h, cubeStart * h, cubeEnd * h );
+
+    glVertex3f ( cubeEnd * h, cubeStart * h,cubeEnd * h );
+    glVertex3f ( cubeEnd * h, cubeEnd * h, cubeEnd * h);
+    glVertex3f ( cubeStart * h, cubeEnd * h, cubeEnd * h );
+    glVertex3f ( cubeStart * h, cubeStart * h, cubeEnd * h );
+
+    glVertex3f ( cubeEnd * h, cubeEnd * h, cubeEnd * h);
+    glVertex3f ( cubeEnd * h, cubeEnd * h, cubeStart * h);
+    glVertex3f ( cubeStart * h, cubeEnd * h, cubeStart * h );
+    glVertex3f ( cubeStart * h, cubeEnd * h, cubeEnd * h );
+
+    glVertex3f ( cubeStart * h, cubeStart * h, cubeStart * h );
+    glVertex3f ( cubeEnd * h, cubeStart * h, cubeStart * h);
+    glVertex3f ( cubeEnd * h, cubeEnd * h, cubeStart * h);
+    glVertex3f ( cubeStart * h, cubeEnd * h, cubeStart * h);
 
     for ( i=0; i<N - 1; i++ ) {
         x = (i-0.5f)*h;
