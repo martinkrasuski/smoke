@@ -8,9 +8,9 @@
 #define IX(i,j,k) ((i)+(M+2)*(j) + (M+2)*(N+2)*(k)) 
 #define MAX(a,b)            (((a) > (b)) ? (a) : (b))
 
-#define WINDOW_TITLE "Fluid"
-#define WINDOW_WIDTH 768
-#define WINDOW_HEIGHT 768
+#define WINDOW_TITLE "Smoke"
+#define WINDOW_WIDTH 550
+#define WINDOW_HEIGHT 550
 #define SIZE 28 // Best not to raise this very high
 
 extern void dens_step ( int M, int N, int O, float * x, float * x0, float * u, float * v, float * w, float diff, float dt );
@@ -26,7 +26,14 @@ static float diff = 0.0f; // diffuse
 static float visc = 0.0f; // viscosity
 static float force = 10.0f;  // added on keypress on an axis
 static float source = 200.0f; // density
-static float source_alpha =  0.05; //for displaying density
+static float source_alpha =  0.03; //for displaying density
+
+// for changing colors
+static int rr = 1;
+static int gg = 1;
+static int bb = 1;
+static int aa = 1;
+static int increment_color = 1;
 
 static int addforce[3] = {0, 0, 0};
 static int addsource = 0;
@@ -206,6 +213,7 @@ static void draw_density ( void )
 	float x, y,z, h, d000, d010, d100, d110,d001, d011, d101, d111;
 	
 	h = 1.0f/MAX(MAX(M, N), MAX(N, O));
+	//h = 0.75f/MAX(MAX(M, N), MAX(N, O));
 
 	glBegin ( GL_QUADS );
 
@@ -226,37 +234,46 @@ static void draw_density ( void )
 				d101 = dens[IX(i+1,j,k+1)];
 				d111 = dens[IX(i+1,j+1,k+1)];				
                 
-				// draw density as a cube of quads
-
-				glColor4f ( d111, d111, d111, source_alpha ); glVertex3f ( x+h,y+h,z+h );
-				glColor4f ( d011, d011, d011, source_alpha ); glVertex3f ( x, y+h, z+h);
-				glColor4f ( d001, d001, d001, source_alpha ); glVertex3f ( x, y, z+h );
-				glColor4f ( d101, d101, d101, source_alpha ); glVertex3f ( x+h, y, z+h );
-
-				glColor4f ( d110, d110, d110, source_alpha ); glVertex3f ( x+h, y+h, z );
-				glColor4f ( d111, d111, d111, source_alpha ); glVertex3f ( x+h,y+h,z+h );
-				glColor4f ( d101, d101, d101, source_alpha ); glVertex3f ( x+h, y, z+h );
-				glColor4f ( d100, d100, d100, source_alpha ); glVertex3f ( x+h, y, z );
-
-				glColor4f ( d010, d010, d010, source_alpha ); glVertex3f ( x, y+h, z );
-				glColor4f ( d110, d110, d110, source_alpha ); glVertex3f ( x+h, y+h, z );
-				glColor4f ( d100, d100, d100, source_alpha ); glVertex3f ( x+h, y, z );
-				glColor4f ( d000, d000, d000, source_alpha ); glVertex3f ( x, y, z );
+                /*
+                d000 *= 1.25;
+                d010 *= 3.25;
+                d100 *= 0.25;
+                d110 *= 0.15;
                 
-				glColor4f ( d011, d011, d011, source_alpha ); glVertex3f ( x, y+h, z+h);
-				glColor4f ( d010, d010, d010, source_alpha ); glVertex3f ( x, y+h, z );
-				glColor4f ( d000, d000, d000, source_alpha ); glVertex3f ( x, y, z );
-				glColor4f ( d001, d001, d001, source_alpha ); glVertex3f ( x, y, z+h );
+                d001 *= 1.75;
+                d010 *= 2.25;
+                d111 *= 1.25;
+                */
+				// draw density as a cube of quads
+				glColor4f ( rr*d111, gg*d111, bb*d111, source_alpha); glVertex3f (x+h,y+h,z+h);
+				glColor4f ( rr*d011, gg*d011, bb*d011, source_alpha ); glVertex3f ( x, y+h, z+h);
+				glColor4f ( rr*d001, gg*d001, bb*d001, source_alpha ); glVertex3f ( x, y, z+h );
+				glColor4f ( rr*d101, gg*d101, bb*d101, source_alpha ); glVertex3f ( x+h, y, z+h);
 
-				glColor4f ( d100, d100, d100, source_alpha ); glVertex3f ( x+h, y, z );
-				glColor4f ( d000, d000, d000, source_alpha ); glVertex3f ( x, y, z );
-				glColor4f ( d001, d001, d001, source_alpha ); glVertex3f ( x, y, z+h );
-				glColor4f ( d101, d101, d101, source_alpha ); glVertex3f ( x+h, y, z+h );
+				glColor4f ( rr*d110, gg*d110, bb*d110, source_alpha ); glVertex3f ( x+h, y+h, z);
+				glColor4f ( rr*d111, gg*d111, bb*d111, source_alpha ); glVertex3f ( x+h,y+h,z+h);
+				glColor4f ( rr*d101, gg*d101, bb*d101, source_alpha ); glVertex3f ( x+h, y, z+h);
+				glColor4f ( rr*d100, gg*d100, bb*d100, source_alpha ); glVertex3f ( x+h, y, z);
 
-				glColor4f ( d110, d110, d110, source_alpha ); glVertex3f ( x+h, y+h, z );
-				glColor4f ( d010, d010, d010, source_alpha ); glVertex3f ( x, y+h, z );
-				glColor4f ( d011, d011, d011, source_alpha ); glVertex3f ( x, y+h, z+h);
-				glColor4f ( d111, d111, d111, source_alpha ); glVertex3f ( x+h, y+h, z+h );				
+				glColor4f ( rr*d010, gg*d010, bb*d010, source_alpha ); glVertex3f ( x, y+h, z);
+				glColor4f ( rr*d110, gg*d110, bb*d110, source_alpha ); glVertex3f ( x+h, y+h, z);
+				glColor4f ( rr*d100, gg*d100, bb*d100, source_alpha ); glVertex3f ( x+h, y, z);
+				glColor4f ( rr*d000, gg*d000, bb*d000, source_alpha ); glVertex3f ( x, y, z );
+            
+				glColor4f ( rr*d011, gg*d011, bb*d011, source_alpha ); glVertex3f ( x, y+h, z+h);
+				glColor4f ( rr*d010, gg*d010, bb*d010, source_alpha ); glVertex3f ( x, y+h, z );
+				glColor4f ( rr*d000, gg*d000, bb*d000, source_alpha ); glVertex3f ( x, y, z );
+				glColor4f ( rr*d001, gg*d001, bb*d001, source_alpha ); glVertex3f ( x, y, z+h );
+
+				glColor4f ( rr*d100, gg*d100, bb*d100, source_alpha ); glVertex3f ( x+h, y, z );
+				glColor4f ( rr*d000, gg*d000, bb*d000, source_alpha ); glVertex3f ( x, y, z );
+				glColor4f ( rr*d001, gg*d001, bb*d001, source_alpha ); glVertex3f ( x, y, z+h );
+				glColor4f ( rr*d101, gg*d101, bb*d101, source_alpha ); glVertex3f ( x+h, y, z+h);
+
+				glColor4f ( rr*d110, gg*d110, bb*d110, source_alpha ); glVertex3f (x+h, y+h, z);
+				glColor4f ( rr*d010, gg*d010, bb*d010, source_alpha ); glVertex3f ( x, y+h, z );
+				glColor4f ( rr*d011, gg*d011, bb*d011, source_alpha ); glVertex3f ( x, y+h, z+h);
+				glColor4f ( rr*d111, gg*d111, bb*d111, source_alpha ); glVertex3f (x+h,y+h,z+h);				
 			}
 		}
 	}
@@ -366,7 +383,7 @@ void draw_help()
                      "      'C' key - clear simulation\n" \
                      "      'V' key - show/hide velocities\n" \
                      "      'A' Key - show/hide the XYZ axis\n" \
-                     "      'H' key - show/hide this help message\n"\
+                     "      'Q' key - show/hide this help message\n"\
                      "      Left click  - pan from location\n" \
                      "      Right click - rotate cube\n"\
                      "      ESC - quit"\
@@ -468,10 +485,37 @@ static void key_func ( unsigned char key, int x, int y )
 			case 'a':       // 'A' Key draw axis
 				daxis = !daxis;  // toggle draw axis
 				break;
-			case 'h':       // 'H' key - get help*/
+			case 'q':       // 'H' key - get help*/
 				dhelp = !dhelp;  // toggle show help
 				break;
-		}
+		    case 'r':
+                rr += increment_color;
+                break;
+            case 't':
+                rr -= increment_color;
+                break;
+            case 'g':
+                gg += increment_color;
+                break;
+            case 'h':
+                gg -= increment_color;
+                break;
+            case 'b':
+                bb += increment_color;
+                break;
+            case 'n':
+                bb -= increment_color;
+                break;
+            case 'o':
+                //aa += .05;
+                source_alpha += .01;
+                break;
+            case 'l':
+                //aa -= .05;
+                source_alpha -= .01;
+                break;
+
+        }
 }
 
 static void mouse_func ( int button, int state, int x, int y )
@@ -516,11 +560,12 @@ static void open_glut_window ( void )
 {
 	glutInitDisplayMode ( GLUT_RGBA | GLUT_DOUBLE );
 
-	glutInitWindowPosition ( 0, 0 );
+	glutInitWindowPosition ( 300, 100 );
 	glutInitWindowSize ( win_x, win_y );
-	win_id = glutCreateWindow ( "3D Fluid Simulation" );
+	win_id = glutCreateWindow ( "Smoke Simulation" );
 
-	glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );
+	//glClearColor ( 0.0f, 0.0f, 0.0f, 0.15f );
+	glClearColor ( 0.15f, 0.15f, 0.15f, 0.0f );
 	glClear ( GL_COLOR_BUFFER_BIT );
 	glutSwapBuffers ();
 	glClear ( GL_COLOR_BUFFER_BIT );
